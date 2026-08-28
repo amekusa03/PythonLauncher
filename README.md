@@ -40,7 +40,7 @@
 ### 必要ライブラリのインストール (Ubuntu/Debian)
 ```bash
 sudo apt update
-sudo apt install -y build-essential cmake qt6-base-dev
+sudo apt install -y build-essential cmake qtbase5-dev
 ```
 
 ### ビルドと実行
