@@ -29,6 +29,7 @@ protected:
 private slots:
     void onAddAppClicked();
     void onAddSamplesClicked();
+    void onRegisterDesktopClicked();
     void onEditApp(const QString& appId);
     void onDeleteApp(const QString& appId);
     void onRunApp(const QString& appId);
@@ -41,6 +42,7 @@ private slots:
 
 private:
     void initUI();
+    void updateRegisterDesktopButton();
     void loadAppsConfig();
     void saveAppsConfig();
     void renderAppCards();
@@ -55,6 +57,7 @@ private:
     QScrollArea *m_scrollArea;
     LogViewer *m_logViewer;
     QLineEdit *m_searchEdit;
+    QPushButton *m_btnRegisterDesktop;
 
     QMap<QString, QWidget*> m_cardWidgets; // appId -> Card Widget
 };

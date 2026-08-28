@@ -16,6 +16,7 @@ public:
     QString workingDir;
     QString arguments;
     QString iconPath;
+    bool keepAliveAfterExit = true;
 
     QJsonObject toJson() const;
     static AppItem fromJson(const QJsonObject& json);

@@ -27,6 +27,7 @@ public:
     State currentState() const { return m_state; }
     qint64 currentPid() const;
     QString appId() const { return m_appId; }
+    bool isDetached() const { return m_isDetached; }
 
 signals:
     void stateChanged(const QString& appId, ProcessRunner::State state, qint64 pid, int exitCode);
@@ -43,6 +44,8 @@ private:
     QProcess *m_process;
     QString m_appId;
     State m_state;
+    bool m_isDetached;
+    qint64 m_detachedPid;
     void setState(State state, int exitCode = 0);
 };
 

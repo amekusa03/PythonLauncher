@@ -18,6 +18,7 @@ QJsonObject AppItem::toJson() const {
     json["workingDir"] = workingDir;
     json["arguments"] = arguments;
     json["iconPath"] = iconPath;
+    json["keepAliveAfterExit"] = keepAliveAfterExit;
     return json;
 }
 
@@ -33,6 +34,7 @@ AppItem AppItem::fromJson(const QJsonObject& json) {
     item.workingDir = json["workingDir"].toString();
     item.arguments = json["arguments"].toString();
     item.iconPath = json["iconPath"].toString();
+    item.keepAliveAfterExit = json.contains("keepAliveAfterExit") ? json["keepAliveAfterExit"].toBool(true) : true;
     return item;
 }
 

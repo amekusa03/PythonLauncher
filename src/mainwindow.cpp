@@ -45,7 +45,10 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow() {
     saveAppsConfig();
     for (auto runner : m_runners) {
-        runner->stop();
+        runner->disconnect();
+        if (!runner->isDetached()) {
+            runner->stop();
+        }
     }
 }
 
@@ -70,6 +73,10 @@ void MainWindow::initUI() {
     lblIcon->setFont(iconFont);
 
     QVBoxLayout *titleLayout = new QVBoxLayout();
+    
+    QHBoxLayout *titleLineLayout = new QHBoxLayout();
+    titleLineLayout->setSpacing(10);
+
     QLabel *lblTitle = new QLabel("Python アプリ ランチャー", this);
     QFont titleFont = lblTitle->font();
     titleFont.setPointSize(14);
@@ -77,10 +84,23 @@ void MainWindow::initUI() {
     lblTitle->setFont(titleFont);
     lblTitle->setStyleSheet("color: #2c3e50;");
 
+    m_btnRegisterDesktop = new QPushButton(this);
+    m_btnRegisterDesktop->setCursor(Qt::PointingHandCursor);
+    m_btnRegisterDesktop->setStyleSheet(
+        "QPushButton { background-color: #f0f2f5; color: #4a5568; border: 1px solid #dcdfe6; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #e2e8f0; color: #2d3748; border-color: #cbd5e0; }"
+    );
+    connect(m_btnRegisterDesktop, &QPushButton::clicked, this, &MainWindow::onRegisterDesktopClicked);
+    updateRegisterDesktopButton();
+
+    titleLineLayout->addWidget(lblTitle);
+    titleLineLayout->addWidget(m_btnRegisterDesktop);
+    titleLineLayout->addStretch();
+
     QLabel *lblSubtitle = new QLabel("コマンドライン入力不要・ワンクリックでPythonスクリプトを安全起動", this);
     lblSubtitle->setStyleSheet("color: #7f8c8d; font-size: 11px;");
 
-    titleLayout->addWidget(lblTitle);
+    titleLayout->addLayout(titleLineLayout);
     titleLayout->addWidget(lblSubtitle);
 
     headerLayout->addWidget(lblIcon);
@@ -133,9 +153,10 @@ void MainWindow::initUI() {
     splitter->addWidget(cardsContainer);
     splitter->addWidget(m_logViewer);
 
-    // Set initial splitter proportions (60% cards, 40% log)
-    splitter->setStretchFactor(0, 3);
-    splitter->setStretchFactor(1, 2);
+    // Set initial splitter proportions (82% cards, 18% log)
+    splitter->setStretchFactor(0, 5);
+    splitter->setStretchFactor(1, 1);
+    splitter->setSizes(QList<int>() << 520 << 130);
 
     mainLayout->addWidget(splitter, 1);
 
@@ -271,6 +292,13 @@ QWidget* MainWindow::createCardWidget(const AppItem& item) {
     lblInterpBadge->setStyleSheet("background-color: #e4e7ed; color: #409eff; font-size: 10px; font-weight: bold; border-radius: 3px; padding: 2px 6px;");
     titleLine->addWidget(lblInterpBadge);
 
+    if (item.keepAliveAfterExit) {
+        QLabel *lblDetachedBadge = new QLabel("🔄 独立起動", card);
+        lblDetachedBadge->setToolTip("親アプリ終了後もバックグラウンドで継続実行するモード");
+        lblDetachedBadge->setStyleSheet("background-color: #fdf6ec; color: #e6a23c; font-size: 10px; font-weight: bold; border-radius: 3px; padding: 2px 6px;");
+        titleLine->addWidget(lblDetachedBadge);
+    }
+
     // Status Badge
     QLabel *lblStatus = new QLabel(card);
     lblStatus->setObjectName(QString("status_%1").arg(item.id));
@@ -370,6 +398,7 @@ void MainWindow::onAddSamplesClicked() {
     item1.scriptPath = sampleGui;
     item1.interpreterPath = AppItem::autoDetectInterpreter(sampleGui);
     item1.workingDir = QFileInfo(sampleGui).absolutePath();
+    item1.keepAliveAfterExit = true;
 
     AppItem item2;
     item2.name = "サンプル CLI ツール (リアルタイム出力)";
@@ -377,6 +406,7 @@ void MainWindow::onAddSamplesClicked() {
     item2.scriptPath = sampleCli;
     item2.interpreterPath = AppItem::autoDetectInterpreter(sampleCli);
     item2.workingDir = QFileInfo(sampleCli).absolutePath();
+    item2.keepAliveAfterExit = true;
 
     m_appList.append(item1);
     m_appList.append(item2);
@@ -421,7 +451,10 @@ void MainWindow::onDeleteApp(const QString& appId) {
 
     if (reply == QMessageBox::Yes) {
         if (m_runners.contains(appId)) {
-            m_runners[appId]->stop();
+            if (!m_runners[appId]->isDetached()) {
+                m_runners[appId]->stop();
+            }
+            m_runners[appId]->disconnect();
             m_runners[appId]->deleteLater();
             m_runners.remove(appId);
         }
@@ -534,6 +567,7 @@ void MainWindow::dropEvent(QDropEvent *event) {
                 item.scriptPath = path;
                 item.workingDir = info.absolutePath();
                 item.interpreterPath = AppItem::autoDetectInterpreter(path);
+                item.keepAliveAfterExit = true;
 
                 AddAppDialog dlg(item, this);
                 if (dlg.exec() == QDialog::Accepted) {
@@ -544,5 +578,76 @@ void MainWindow::dropEvent(QDropEvent *event) {
                 break;
             }
         }
+    }
+}
+
+
+void MainWindow::updateRegisterDesktopButton() {
+    QString appDir = QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
+    QString desktopFilePath = QDir(appDir).filePath("python-launcher.desktop");
+    bool exists = (!appDir.isEmpty() && QFile::exists(desktopFilePath));
+
+    if (exists) {
+        m_btnRegisterDesktop->setText("🗑️ アプリ一覧から解除");
+        m_btnRegisterDesktop->setToolTip("Ubuntuのアプリケーション一覧からこのアプリの登録を削除します");
+    } else {
+        m_btnRegisterDesktop->setText("🖥️ アプリ一覧に登録");
+        m_btnRegisterDesktop->setToolTip("Ubuntuのアプリケーション一覧にこのアプリを登録します");
+    }
+}
+
+void MainWindow::onRegisterDesktopClicked() {
+    QString appDir = QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
+    if (appDir.isEmpty()) {
+        QMessageBox::critical(this, "エラー", "アプリケーション格納フォルダを取得できませんでした。");
+        return;
+    }
+
+    QDir().mkpath(appDir);
+    QString desktopFilePath = QDir(appDir).filePath("python-launcher.desktop");
+
+    if (QFile::exists(desktopFilePath)) {
+        auto reply = QMessageBox::question(this, "登録解除の確認",
+            "Ubuntuのアプリケーション一覧から「Python Launcher」の登録を解除しますか？",
+            QMessageBox::Yes | QMessageBox::No);
+
+        if (reply == QMessageBox::Yes) {
+            if (QFile::remove(desktopFilePath)) {
+                QMessageBox::information(this, "解除完了", "アプリケーション一覧から登録を解除しました。");
+            } else {
+                QMessageBox::critical(this, "エラー", "ショートカットファイルの削除に失敗しました。");
+            }
+            updateRegisterDesktopButton();
+        }
+    } else {
+        QString execPath = QCoreApplication::applicationFilePath();
+        QFile file(desktopFilePath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QMessageBox::critical(this, "エラー", QString("ショートカットファイルの作成に失敗しました:\n%1").arg(file.errorString()));
+            return;
+        }
+
+        QTextStream out(&file);
+        out << "[Desktop Entry]\n";
+        out << "Version=1.0\n";
+        out << "Type=Application\n";
+        out << "Name=Python Launcher\n";
+        out << "GenericName=Python App Launcher\n";
+        out << "Comment=コマンドライン入力不要・ワンクリックでPythonスクリプトを安全起動\n";
+        out << "Exec=\"" << execPath << "\" %f\n";
+        out << "Icon=utilities-terminal\n";
+        out << "Terminal=false\n";
+        out << "Categories=Development;Utility;\n";
+        file.close();
+
+        file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner |
+                            QFileDevice::ReadGroup | QFileDevice::ExeGroup |
+                            QFileDevice::ReadOther | QFileDevice::ExeOther);
+
+        QMessageBox::information(this, "登録完了",
+            QString("Ubuntuのアプリケーション一覧に「Python Launcher」を登録しました！\n\n"
+                    "【起動方法】\n"
+                    "・画面左下の「アプリを表示」（またはSuperキー）から「Python Launcher」を検索して直接起動できます。"));
+        updateRegisterDesktopButton();
     }
 }

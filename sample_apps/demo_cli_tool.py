@@ -4,18 +4,17 @@ import sys
 
 def main():
     print("==========================================", flush=True)
-    print(" リアルタイム処理サンプル (CLIツール)", flush=True)
+    print(" バックグラウンド継続型 サンプル (CLIツール)", flush=True)
     print("==========================================", flush=True)
+    print("親アプリを終了しても、このスクリプトはバックグラウンドで動き続けます。", flush=True)
     
-    total_steps = 10
-    for i in range(1, total_steps + 1):
-        percent = i * 10
-        print(f"[{i}/{total_steps}] 処理を実行中... ({percent}%)", flush=True)
-        if i == 5:
-            print("[NOTICE] 中間データ同期完了", file=sys.stderr, flush=True)
-        time.sleep(0.8)
-        
-    print("すべての処理が正常に完了しました！", flush=True)
+    count = 1
+    while True:
+        print(f"[{count}] バックグラウンド定期処理を実行中... (2秒ごとに記録)", flush=True)
+        if count % 5 == 0:
+            print(f"[NOTICE] チェックポイント {count}: 正常稼働中", file=sys.stderr, flush=True)
+        time.sleep(2)
+        count += 1
 
 if __name__ == "__main__":
     main()

@@ -13,11 +13,11 @@ def main():
     lbl_title = tk.Label(root, text="Python GUI アプリケーション", font=("Helvetica", 14, "bold"), bg="#f4f6f9", fg="#2c3e50")
     lbl_title.pack(pady=(25, 5))
 
-    lbl_desc = tk.Label(root, text="Qt C++ ランチャーからワンクリックで起動されました。\nターミナル操作なしで安全に実行できます。", font=("Helvetica", 10), bg="#f4f6f9", fg="#555555")
+    lbl_desc = tk.Label(root, text="Qt C++ ランチャーからワンクリックで起動されました。\n親アプリ終了後もこのウィンドウは独立して動作し続けます。", font=("Helvetica", 10), bg="#f4f6f9", fg="#555555")
     lbl_desc.pack(pady=10)
     
     def on_click():
-        messagebox.showinfo("動作確認", "Pythonスクリプトは正常に動作しています！")
+        messagebox.showinfo("動作確認", "Pythonスクリプトは親アプリ終了後も正常に動作しています！")
         print("[Log] ユーザーがメッセージボタンを押しました。", flush=True)
 
     btn = tk.Button(root, text="メッセージを表示", command=on_click, font=("Helvetica", 11, "bold"), bg="#27ae60", fg="white", activebackground="#219150", activeforeground="white", padx=15, pady=8, bd=0, relief="flat")

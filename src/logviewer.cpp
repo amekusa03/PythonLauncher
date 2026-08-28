@@ -9,8 +9,8 @@
 
 LogViewer::LogViewer(QWidget *parent) : QWidget(parent) {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
-    mainLayout->setSpacing(8);
+    mainLayout->setContentsMargins(8, 6, 8, 6);
+    mainLayout->setSpacing(5);
 
     // Control bar
     QHBoxLayout *controlLayout = new QHBoxLayout();
@@ -51,10 +51,10 @@ LogViewer::LogViewer(QWidget *parent) : QWidget(parent) {
         "  background-color: #1e1e1e;"
         "  color: #d4d4d4;"
         "  font-family: 'Consolas', 'DejaVu Sans Mono', 'Monospace', monospace;"
-        "  font-size: 10pt;"
+        "  font-size: 9pt;"
         "  border: 1px solid #3c3c3c;"
         "  border-radius: 4px;"
-        "  padding: 8px;"
+        "  padding: 4px 6px;"
         "}"
     );
 

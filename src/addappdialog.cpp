@@ -112,6 +112,10 @@ void AddAppDialog::initUI() {
     iconLayout->addWidget(btnIcon);
     formLayout->addRow("アプリアイコン:", iconLayout);
 
+    m_checkKeepAlive = new QCheckBox("親アプリ終了後もバックグラウンドで継続実行する（独立起動）", this);
+    m_checkKeepAlive->setChecked(true);
+    formLayout->addRow("起動モード:", m_checkKeepAlive);
+
     mainLayout->addLayout(formLayout);
 
     // Dialog buttons
@@ -138,6 +142,7 @@ void AddAppDialog::populateFromItem(const AppItem& item) {
     m_editWorkingDir->setText(item.workingDir);
     m_editArguments->setText(item.arguments);
     m_editIconPath->setText(item.iconPath);
+    m_checkKeepAlive->setChecked(item.keepAliveAfterExit);
 }
 
 void AddAppDialog::browseScript() {
@@ -206,6 +211,7 @@ void AddAppDialog::validateAndAccept() {
     m_currentItem.workingDir = m_editWorkingDir->text().trimmed();
     m_currentItem.arguments = m_editArguments->text().trimmed();
     m_currentItem.iconPath = m_editIconPath->text().trimmed();
+    m_currentItem.keepAliveAfterExit = m_checkKeepAlive->isChecked();
 
     accept();
 }

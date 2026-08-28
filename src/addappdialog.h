@@ -5,6 +5,7 @@
 #include <QLineEdit>
 #include <QToolButton>
 #include <QPushButton>
+#include <QCheckBox>
 #include "appitem.h"
 
 class AddAppDialog : public QDialog {
@@ -34,6 +35,7 @@ private:
     QLineEdit *m_editWorkingDir;
     QLineEdit *m_editArguments;
     QLineEdit *m_editIconPath;
+    QCheckBox *m_checkKeepAlive;
 
     QPushButton *m_btnAutoDetect;
 
