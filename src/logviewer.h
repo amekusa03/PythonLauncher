@@ -6,6 +6,7 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QPushButton>
+#include <QLabel>
 #include <QMap>
 #include <QDateTime>
 
@@ -18,6 +19,7 @@ public:
     void registerApp(const QString& appId, const QString& appName);
     void unregisterApp(const QString& appId);
     void selectAppTab(const QString& appId);
+    void retranslateUi();
 
 private slots:
     void onAppSelectorChanged(int index);
@@ -30,6 +32,8 @@ private:
         QString htmlContent;
     };
 
+    QLabel *m_lblTitle;
+    QLabel *m_lblTarget;
     QComboBox *m_comboApps;
     QTextEdit *m_textConsole;
     QCheckBox *m_chkAutoScroll;

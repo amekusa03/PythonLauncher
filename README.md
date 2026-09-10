@@ -1,49 +1,55 @@
 # Python App Launcher (Qt C++)
 
-コマンドライン操作（ターミナル入力）に不慣れな元Windowsユーザー向けの、**GUIベースのPythonアプリケーション起動・管理ランチャー**です。
+[English](README.md) | [日本語](README.jp.md)
 
 ---
 
-## 🌟 主な特徴
-
-1. **ワンクリックでUbuntuのアプリ一覧に登録 / 解除**:
-   - タイトル横の **「🖥️ アプリ一覧に登録」** ボタンを押すだけで、Ubuntuの「アプリを表示」（Superキー検索）に本ランチャーが登録されます。
-   - すでに登録済みの場合はボタンが **「🗑️ アプリ一覧から解除」** に自動切り替わり、いつでもワンクリックで解除できます。
-2. **完全GUI操作 (ターミナル不要)**:
-   - Pythonスクリプト (`.py`, `.pyw`) の登録・編集・起動・停止をボタン一つで実行。
-   - アプリ画面に `.py` ファイルを**ドラッグ＆ドロップ**するだけで簡単追加。
-3. **自動Python/仮想環境(venv)検出**:
-   - スクリプトのあるフォルダ内の `venv` や `.venv` を自動認識。
-   - システムPython (`/usr/bin/python3`) との切り替えも容易。
-4. **独立起動 (バックグラウンド継続実行)**:
-   - GUIアプリなどを起動した後、親ランチャーを閉じてもアプリが終了せずにそのまま動き続ける「独立起動」に対応。
-5. **リアルタイムGUIログモニター**:
-   - ターミナルを開かなくても、標準出力 (stdout) と標準エラー (stderr) を色分けてリアルタイム表示。
-   - ログの検索・保存・一括削除に対応。
-6. **設定の自動保存**:
-   - 登録アプリ情報は JSON 形式で自動保存され、次回起動時に復元。
+A **GUI-based Python application launcher and manager** designed for users on Linux/Ubuntu who want to run, manage, and monitor Python scripts effortlessly without using the terminal.
 
 ---
 
-## 🚀 使い方
+## 🌟 Key Features
 
-### 1. 起動方法
-`run.sh` をダブルクリック（または端末で `./run.sh`）でランチャーが起動します。
-
-### 2. Ubuntuのアプリ一覧への登録
-ランチャー起動後、タイトル右側の **「🖥️ アプリ一覧に登録」** をクリックすると、Ubuntuのアプリケーションメニューに「Python Launcher」が追加されます。次回からはSuperキー（Windowsキー）から「Python Launcher」と検索して直接起動できます。
+1. **Multi-Language Support (English / Japanese Switching)**:
+   - Easily switch between English and Japanese in real-time from the header dropdown. Selected language is saved automatically.
+2. **One-Click Ubuntu Application Menu Integration**:
+   - Click the **"🖥️ Add to System Menu"** button next to the title to add Python Launcher to Ubuntu's Application Menu (Super key search).
+   - If already registered, it switches to **"🗑️ Remove from Menu"** to remove the shortcut anytime with a single click.
+3. **Pure GUI Operations (No Terminal Needed)**:
+   - Register, edit, run, and stop Python scripts (`.py`, `.pyw`) with simple button clicks.
+   - Supports **Drag & Drop** of `.py` files directly into the window for quick registration.
+4. **Automatic Python & Virtual Environment (venv) Detection**:
+   - Automatically detects `venv` and `.venv` environments inside the script directory or its parent directory.
+   - Switch between system Python (`/usr/bin/python3`) and custom virtual environments with ease.
+5. **Detached Launch (Background Execution)**:
+   - Supports detached background execution so GUI tools and services keep running even after you close the Python Launcher.
+6. **Real-Time GUI Log Monitor**:
+   - View `stdout` and `stderr` in real-time with color coding without opening a terminal.
+   - Filter logs by application, auto-scroll, clear logs, and export logs to file.
+7. **Automatic Configuration Persistence**:
+   - Registered applications and settings are automatically saved in JSON format and restored on the next startup.
 
 ---
 
-## 🛠️ ビルド手順
+## 🚀 Getting Started
 
-### 必要ライブラリのインストール (Ubuntu/Debian)
+### 1. Launching the App
+Double-click `run.sh` or run `./run.sh` in the terminal to start the launcher.
+
+### 2. Registering to Ubuntu Application Menu
+After launching, click **"🖥️ Add to System Menu"** in the top header. "Python Launcher" will be available in Ubuntu's "Show Applications" menu (Super key search).
+
+---
+
+## 🛠️ Build Instructions
+
+### Prerequisites (Ubuntu / Debian)
 ```bash
 sudo apt update
 sudo apt install -y build-essential cmake qtbase5-dev
 ```
 
-### ビルドと実行
+### Build & Run
 ```bash
 mkdir -p build
 cd build
@@ -54,8 +60,13 @@ make -j$(nproc)
 
 ---
 
-## 🧪 サンプルアプリ同梱
+## 🧪 Included Sample Applications
 
-初めての方でもすぐにテストできるよう、動作サンプルが同梱されています：
-- **サンプル GUI アプリ (Tkinter)**: GUIウィンドウが正しく起動するかテスト
-- **サンプル CLI ツール**: リアルタイムで進行状況ログが出力されるかテスト
+Sample scripts are included for quick testing:
+- **Sample GUI App (Tkinter)**: Tests whether GUI windows display and function properly.
+- **Sample CLI Tool**: Outputs real-time progress and logs to the built-in log viewer.
+
+---
+
+## 📄 License
+MIT License

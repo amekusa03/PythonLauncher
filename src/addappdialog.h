@@ -6,6 +6,8 @@
 #include <QToolButton>
 #include <QPushButton>
 #include <QCheckBox>
+#include <QLabel>
+#include <QFormLayout>
 #include "appitem.h"
 
 class AddAppDialog : public QDialog {
@@ -26,7 +28,18 @@ private slots:
 
 private:
     void initUI();
+    void retranslateUi();
     void populateFromItem(const AppItem& item);
+
+    QLabel *m_lblHeader;
+    QLabel *m_lblName;
+    QLabel *m_lblDescription;
+    QLabel *m_lblScriptPath;
+    QLabel *m_lblInterpreterPath;
+    QLabel *m_lblWorkingDir;
+    QLabel *m_lblArguments;
+    QLabel *m_lblIconPath;
+    QLabel *m_lblMode;
 
     QLineEdit *m_editName;
     QLineEdit *m_editDescription;
@@ -37,7 +50,14 @@ private:
     QLineEdit *m_editIconPath;
     QCheckBox *m_checkKeepAlive;
 
+    QToolButton *m_btnBrowseScript;
+    QToolButton *m_btnBrowseInterp;
+    QToolButton *m_btnBrowseWork;
+    QToolButton *m_btnBrowseIcon;
     QPushButton *m_btnAutoDetect;
+
+    QPushButton *m_btnCancel;
+    QPushButton *m_btnOk;
 
     AppItem m_currentItem;
     bool m_isEditMode;

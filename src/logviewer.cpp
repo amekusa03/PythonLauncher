@@ -1,4 +1,5 @@
 #include "logviewer.h"
+#include "i18n.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -14,28 +15,29 @@ LogViewer::LogViewer(QWidget *parent) : QWidget(parent) {
 
     // Control bar
     QHBoxLayout *controlLayout = new QHBoxLayout();
-    QLabel *lblTitle = new QLabel("📄 実行ログ モニター (ターミナル出力)", this);
-    QFont font = lblTitle->font();
+    m_lblTitle = new QLabel(this);
+    QFont font = m_lblTitle->font();
     font.setBold(true);
-    lblTitle->setFont(font);
+    m_lblTitle->setFont(font);
 
     m_comboApps = new QComboBox(this);
-    m_comboApps->addItem("すべてのログ (全体)", "ALL");
+    m_comboApps->addItem("", "ALL");
     connect(m_comboApps, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &LogViewer::onAppSelectorChanged);
 
-    m_chkAutoScroll = new QCheckBox("自動スクロール", this);
+    m_lblTarget = new QLabel(this);
+    m_chkAutoScroll = new QCheckBox(this);
     m_chkAutoScroll->setChecked(true);
 
-    m_btnClear = new QPushButton("ログ消去", this);
-    m_btnSave = new QPushButton("ログ保存...", this);
+    m_btnClear = new QPushButton(this);
+    m_btnSave = new QPushButton(this);
 
     connect(m_btnClear, &QPushButton::clicked, this, &LogViewer::clearCurrentLog);
     connect(m_btnSave, &QPushButton::clicked, this, &LogViewer::saveLogToFile);
 
-    controlLayout->addWidget(lblTitle);
+    controlLayout->addWidget(m_lblTitle);
     controlLayout->addSpacing(15);
-    controlLayout->addWidget(new QLabel("表示対象:", this));
+    controlLayout->addWidget(m_lblTarget);
     controlLayout->addWidget(m_comboApps, 1);
     controlLayout->addWidget(m_chkAutoScroll);
     controlLayout->addWidget(m_btnClear);
@@ -60,6 +62,21 @@ LogViewer::LogViewer(QWidget *parent) : QWidget(parent) {
 
     mainLayout->addWidget(m_textConsole, 1);
     m_currentAppId = "ALL";
+
+    retranslateUi();
+}
+
+void LogViewer::retranslateUi() {
+    m_lblTitle->setText(TR("log_title"));
+    m_lblTarget->setText(TR("log_target"));
+    m_chkAutoScroll->setText(TR("log_autoscroll"));
+    m_btnClear->setText(TR("log_clear"));
+    m_btnSave->setText(TR("log_save"));
+
+    int allIdx = m_comboApps->findData("ALL");
+    if (allIdx >= 0) {
+        m_comboApps->setItemText(allIdx, TR("log_all"));
+    }
 }
 
 void LogViewer::registerApp(const QString& appId, const QString& appName) {
@@ -94,7 +111,7 @@ void LogViewer::appendLog(const QString& appId, const QString& appName, const QS
     registerApp(appId, appName);
 
     QString timeStr = QDateTime::currentDateTime().toString("HH:mm:ss");
-    QString color = isError ? "#f92672" : (text.startsWith("[システム]") ? "#66d9ef" : "#a6e22e");
+    QString color = isError ? "#f92672" : (text.startsWith("[システム]") || text.startsWith("[System]") ? "#66d9ef" : "#a6e22e");
 
     QString escaped = escapeHtml(text);
     escaped.replace("\n", "<br>");
@@ -150,19 +167,19 @@ void LogViewer::clearCurrentLog() {
 }
 
 void LogViewer::saveLogToFile() {
-    QString fileName = QFileDialog::getSaveFileName(this, "ログを保存", "python_app.log", "Log Files (*.log *.txt);;All Files (*)");
+    QString fileName = QFileDialog::getSaveFileName(this, TR("log_save_dialog_title"), "python_app.log", TR("log_save_filter"));
     if (fileName.isEmpty()) return;
 
     QFile file(fileName);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, "保存失敗", "ログファイルを書き込めませんでした。");
+        QMessageBox::warning(this, TR("log_save_error_title"), TR("log_save_error_text"));
         return;
     }
 
     QTextStream out(&file);
     out << m_textConsole->toPlainText();
     file.close();
-    QMessageBox::information(this, "保存完了", "ログを保存しました: " + fileName);
+    QMessageBox::information(this, TR("log_save_success_title"), TR_ARGS("log_save_success_text", {fileName}));
 }
 
 QString LogViewer::escapeHtml(const QString& plain) {

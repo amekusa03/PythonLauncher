@@ -1,8 +1,8 @@
 #include "mainwindow.h"
 #include "addappdialog.h"
 #include "stylehelper.h"
+#include "i18n.h"
 
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -17,6 +17,7 @@
 #include <QMessageBox>
 #include <QFileInfo>
 #include <QApplication>
+#include <QComboBox>
 #include <QDebug>
 
 static QString suggestAppName(const QString& scriptPath) {
@@ -53,8 +54,7 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::initUI() {
-    setWindowTitle("Python App Launcher");
-    resize(1000, 650);
+    resize(1020, 660);
     setStyleSheet(StyleHelper::getAppStyleSheet());
 
     QWidget *centralWidget = new QWidget(this);
@@ -77,12 +77,12 @@ void MainWindow::initUI() {
     QHBoxLayout *titleLineLayout = new QHBoxLayout();
     titleLineLayout->setSpacing(10);
 
-    QLabel *lblTitle = new QLabel("Python アプリ ランチャー", this);
-    QFont titleFont = lblTitle->font();
+    m_lblTitle = new QLabel(this);
+    QFont titleFont = m_lblTitle->font();
     titleFont.setPointSize(14);
     titleFont.setBold(true);
-    lblTitle->setFont(titleFont);
-    lblTitle->setStyleSheet("color: #2c3e50;");
+    m_lblTitle->setFont(titleFont);
+    m_lblTitle->setStyleSheet("color: #2c3e50;");
 
     m_btnRegisterDesktop = new QPushButton(this);
     m_btnRegisterDesktop->setCursor(Qt::PointingHandCursor);
@@ -91,39 +91,57 @@ void MainWindow::initUI() {
         "QPushButton:hover { background-color: #e2e8f0; color: #2d3748; border-color: #cbd5e0; }"
     );
     connect(m_btnRegisterDesktop, &QPushButton::clicked, this, &MainWindow::onRegisterDesktopClicked);
-    updateRegisterDesktopButton();
 
-    titleLineLayout->addWidget(lblTitle);
+    titleLineLayout->addWidget(m_lblTitle);
     titleLineLayout->addWidget(m_btnRegisterDesktop);
     titleLineLayout->addStretch();
 
-    QLabel *lblSubtitle = new QLabel("コマンドライン入力不要・ワンクリックでPythonスクリプトを安全起動", this);
-    lblSubtitle->setStyleSheet("color: #7f8c8d; font-size: 11px;");
+    m_lblSubtitle = new QLabel(this);
+    m_lblSubtitle->setStyleSheet("color: #7f8c8d; font-size: 11px;");
 
     titleLayout->addLayout(titleLineLayout);
-    titleLayout->addWidget(lblSubtitle);
+    titleLayout->addWidget(m_lblSubtitle);
 
     headerLayout->addWidget(lblIcon);
     headerLayout->addLayout(titleLayout);
     headerLayout->addStretch();
 
+    // Language Selector
+    m_comboLanguage = new QComboBox(this);
+    m_comboLanguage->addItem("🇯🇵 日本語", static_cast<int>(I18n::Language::Japanese));
+    m_comboLanguage->addItem("🇺🇸 English", static_cast<int>(I18n::Language::English));
+    m_comboLanguage->setToolTip("Switch Language / 言語切り替え");
+    m_comboLanguage->setStyleSheet(
+        "QComboBox { background-color: #ffffff; border: 1px solid #dcdfe6; border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #2c3e50; font-weight: bold; }"
+        "QComboBox:hover { border-color: #409eff; }"
+    );
+
+    // Set initial index based on current language
+    if (I18n::instance().currentLanguage() == I18n::Language::English) {
+        m_comboLanguage->setCurrentIndex(1);
+    } else {
+        m_comboLanguage->setCurrentIndex(0);
+    }
+    connect(m_comboLanguage, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &MainWindow::onLanguageComboChanged);
+    headerLayout->addWidget(m_comboLanguage);
+
     // Search filter
     m_searchEdit = new QLineEdit(this);
-    m_searchEdit->setPlaceholderText("🔍 アプリ名で検索...");
-    m_searchEdit->setFixedWidth(200);
+    m_searchEdit->setFixedWidth(180);
     connect(m_searchEdit, &QLineEdit::textChanged, this, &MainWindow::onFilterTextChanged);
     headerLayout->addWidget(m_searchEdit);
 
     // Add App Buttons
-    QPushButton *btnAddSample = new QPushButton("サンプルアプリ登録", this);
-    connect(btnAddSample, &QPushButton::clicked, this, &MainWindow::onAddSamplesClicked);
+    m_btnAddSample = new QPushButton(this);
+    connect(m_btnAddSample, &QPushButton::clicked, this, &MainWindow::onAddSamplesClicked);
 
-    QPushButton *btnAddApp = new QPushButton("＋ 新規アプリ追加", this);
-    btnAddApp->setObjectName("btnPrimary");
-    connect(btnAddApp, &QPushButton::clicked, this, &MainWindow::onAddAppClicked);
+    m_btnAddApp = new QPushButton(this);
+    m_btnAddApp->setObjectName("btnPrimary");
+    connect(m_btnAddApp, &QPushButton::clicked, this, &MainWindow::onAddAppClicked);
 
-    headerLayout->addWidget(btnAddSample);
-    headerLayout->addWidget(btnAddApp);
+    headerLayout->addWidget(m_btnAddSample);
+    headerLayout->addWidget(m_btnAddApp);
 
     mainLayout->addLayout(headerLayout);
 
@@ -153,17 +171,39 @@ void MainWindow::initUI() {
     splitter->addWidget(cardsContainer);
     splitter->addWidget(m_logViewer);
 
-    // Set initial splitter proportions (82% cards, 18% log)
+    // Set initial splitter proportions (80% cards, 20% log)
     splitter->setStretchFactor(0, 5);
     splitter->setStretchFactor(1, 1);
-    splitter->setSizes(QList<int>() << 520 << 130);
+    splitter->setSizes(QList<int>() << 500 << 140);
 
     mainLayout->addWidget(splitter, 1);
 
     // Drag & Drop notice bar
-    QLabel *lblNotice = new QLabel("💡 ヒント: .py ファイルをこのウィンドウ内にドラッグ＆ドロップして簡単に登録できます。", this);
-    lblNotice->setStyleSheet("color: #606266; font-size: 11px; padding: 4px; border-top: 1px solid #e4e7ed;");
-    mainLayout->addWidget(lblNotice);
+    m_lblNotice = new QLabel(this);
+    m_lblNotice->setStyleSheet("color: #606266; font-size: 11px; padding: 4px; border-top: 1px solid #e4e7ed;");
+    mainLayout->addWidget(m_lblNotice);
+
+    retranslateUi();
+}
+
+void MainWindow::onLanguageComboChanged(int index) {
+    I18n::Language lang = static_cast<I18n::Language>(m_comboLanguage->itemData(index).toInt());
+    I18n::instance().setLanguage(lang);
+    retranslateUi();
+}
+
+void MainWindow::retranslateUi() {
+    setWindowTitle(TR("app_window_title"));
+    m_lblTitle->setText(TR("app_title"));
+    m_lblSubtitle->setText(TR("app_subtitle"));
+    m_searchEdit->setPlaceholderText(TR("search_placeholder"));
+    m_btnAddSample->setText(TR("btn_add_sample"));
+    m_btnAddApp->setText(TR("btn_add_app"));
+    m_lblNotice->setText(TR("hint_drag_drop"));
+
+    updateRegisterDesktopButton();
+    m_logViewer->retranslateUi();
+    renderAppCards();
 }
 
 QString MainWindow::getConfigFilePath() const {
@@ -293,8 +333,8 @@ QWidget* MainWindow::createCardWidget(const AppItem& item) {
     titleLine->addWidget(lblInterpBadge);
 
     if (item.keepAliveAfterExit) {
-        QLabel *lblDetachedBadge = new QLabel("🔄 独立起動", card);
-        lblDetachedBadge->setToolTip("親アプリ終了後もバックグラウンドで継続実行するモード");
+        QLabel *lblDetachedBadge = new QLabel(TR("card_badge_detached"), card);
+        lblDetachedBadge->setToolTip(TR("card_tip_detached"));
         lblDetachedBadge->setStyleSheet("background-color: #fdf6ec; color: #e6a23c; font-size: 10px; font-weight: bold; border-radius: 3px; padding: 2px 6px;");
         titleLine->addWidget(lblDetachedBadge);
     }
@@ -304,10 +344,10 @@ QWidget* MainWindow::createCardWidget(const AppItem& item) {
     lblStatus->setObjectName(QString("status_%1").arg(item.id));
     if (isRunning) {
         qint64 pid = m_runners[item.id]->currentPid();
-        lblStatus->setText(QString("🟢 実行中 (PID: %1)").arg(pid));
+        lblStatus->setText(TR_ARGS("card_status_running", {QString::number(pid)}));
         lblStatus->setStyleSheet("color: #67c23a; font-size: 11px; font-weight: bold;");
     } else {
-        lblStatus->setText("⚪ 停止中");
+        lblStatus->setText(TR("card_status_stopped"));
         lblStatus->setStyleSheet("color: #909399; font-size: 11px;");
     }
     titleLine->addWidget(lblStatus);
@@ -316,7 +356,7 @@ QWidget* MainWindow::createCardWidget(const AppItem& item) {
     infoLayout->addLayout(titleLine);
 
     // Description & Script Path
-    QLabel *lblDesc = new QLabel(item.description.isEmpty() ? "（説明なし）" : item.description, card);
+    QLabel *lblDesc = new QLabel(item.description.isEmpty() ? TR("card_no_desc") : item.description, card);
     lblDesc->setStyleSheet("color: #606266; font-size: 11px;");
     infoLayout->addWidget(lblDesc);
 
@@ -330,19 +370,19 @@ QWidget* MainWindow::createCardWidget(const AppItem& item) {
     QHBoxLayout *btnLayout = new QHBoxLayout();
     btnLayout->setSpacing(6);
 
-    QPushButton *btnRun = new QPushButton("▶ 起動", card);
+    QPushButton *btnRun = new QPushButton(TR("card_btn_run"), card);
     btnRun->setObjectName("btnRun");
     btnRun->setEnabled(!isRunning);
 
-    QPushButton *btnStop = new QPushButton("■ 停止", card);
+    QPushButton *btnStop = new QPushButton(TR("card_btn_stop"), card);
     btnStop->setObjectName("btnStop");
     btnStop->setEnabled(isRunning);
 
-    QPushButton *btnLog = new QPushButton("📄 ログ", card);
+    QPushButton *btnLog = new QPushButton(TR("card_btn_log"), card);
     QPushButton *btnEdit = new QPushButton("⚙", card);
-    btnEdit->setToolTip("編集");
+    btnEdit->setToolTip(TR("card_tip_edit"));
     QPushButton *btnDelete = new QPushButton("🗑", card);
-    btnDelete->setToolTip("削除");
+    btnDelete->setToolTip(TR("card_tip_delete"));
 
     QString appId = item.id;
     connect(btnRun, &QPushButton::clicked, this, [this, appId]() { onRunApp(appId); });
@@ -393,16 +433,16 @@ void MainWindow::onAddSamplesClicked() {
     if (!QFile::exists(sampleCli) && QFile::exists(cli3)) sampleCli = cli3;
 
     AppItem item1;
-    item1.name = "サンプル GUI アプリ (Tkinter)";
-    item1.description = "ワンクリックで動くTkinterメッセージボックス付きサンプル画面";
+    item1.name = TR("sample_gui_name");
+    item1.description = TR("sample_gui_desc");
     item1.scriptPath = sampleGui;
     item1.interpreterPath = AppItem::autoDetectInterpreter(sampleGui);
     item1.workingDir = QFileInfo(sampleGui).absolutePath();
     item1.keepAliveAfterExit = true;
 
     AppItem item2;
-    item2.name = "サンプル CLI ツール (リアルタイム出力)";
-    item2.description = "ログ画面にリアルタイム進捗とエラーを出力する処理サンプル";
+    item2.name = TR("sample_cli_name");
+    item2.description = TR("sample_cli_desc");
     item2.scriptPath = sampleCli;
     item2.interpreterPath = AppItem::autoDetectInterpreter(sampleCli);
     item2.workingDir = QFileInfo(sampleCli).absolutePath();
@@ -414,7 +454,7 @@ void MainWindow::onAddSamplesClicked() {
     saveAppsConfig();
     renderAppCards();
 
-    QMessageBox::information(this, "サンプル登録", "動作テスト用のサンプルPythonアプリを2件追加しました！");
+    QMessageBox::information(this, TR("sample_added_title"), TR("sample_added_text"));
 }
 
 void MainWindow::onEditApp(const QString& appId) {
@@ -445,8 +485,8 @@ void MainWindow::onDeleteApp(const QString& appId) {
     }
     if (targetIdx < 0) return;
 
-    auto reply = QMessageBox::question(this, "登録削除",
-        QString("「%1」の登録を一覧から削除しますか？\n（スクリプトファイル自体は削除されません）").arg(m_appList[targetIdx].name),
+    auto reply = QMessageBox::question(this, TR("msg_delete_confirm_title"),
+        TR_ARGS("msg_delete_confirm_text", {m_appList[targetIdx].name}),
         QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
@@ -514,16 +554,16 @@ void MainWindow::onProcessStateChanged(const QString& appId, ProcessRunner::Stat
 
         if (lblStatus) {
             if (state == ProcessRunner::Running) {
-                lblStatus->setText(QString("🟢 実行中 (PID: %1)").arg(pid));
+                lblStatus->setText(TR_ARGS("card_status_running", {QString::number(pid)}));
                 lblStatus->setStyleSheet("color: #67c23a; font-size: 11px; font-weight: bold;");
             } else if (state == ProcessRunner::Starting) {
-                lblStatus->setText("🟡 起動処理中...");
+                lblStatus->setText(TR("card_status_starting"));
                 lblStatus->setStyleSheet("color: #e6a23c; font-size: 11px; font-weight: bold;");
             } else if (state == ProcessRunner::FailedToStart) {
-                lblStatus->setText("🔴 起動失敗");
+                lblStatus->setText(TR("card_status_failed"));
                 lblStatus->setStyleSheet("color: #f56c6c; font-size: 11px; font-weight: bold;");
             } else {
-                lblStatus->setText("⚪ 停止中");
+                lblStatus->setText(TR("card_status_stopped"));
                 lblStatus->setStyleSheet("color: #909399; font-size: 11px;");
             }
         }
@@ -581,25 +621,24 @@ void MainWindow::dropEvent(QDropEvent *event) {
     }
 }
 
-
 void MainWindow::updateRegisterDesktopButton() {
     QString appDir = QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
     QString desktopFilePath = QDir(appDir).filePath("python-launcher.desktop");
     bool exists = (!appDir.isEmpty() && QFile::exists(desktopFilePath));
 
     if (exists) {
-        m_btnRegisterDesktop->setText("🗑️ アプリ一覧から解除");
-        m_btnRegisterDesktop->setToolTip("Ubuntuのアプリケーション一覧からこのアプリの登録を削除します");
+        m_btnRegisterDesktop->setText(TR("btn_desktop_unregister"));
+        m_btnRegisterDesktop->setToolTip(TR("tip_desktop_unregister"));
     } else {
-        m_btnRegisterDesktop->setText("🖥️ アプリ一覧に登録");
-        m_btnRegisterDesktop->setToolTip("Ubuntuのアプリケーション一覧にこのアプリを登録します");
+        m_btnRegisterDesktop->setText(TR("btn_desktop_register"));
+        m_btnRegisterDesktop->setToolTip(TR("tip_desktop_register"));
     }
 }
 
 void MainWindow::onRegisterDesktopClicked() {
     QString appDir = QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
     if (appDir.isEmpty()) {
-        QMessageBox::critical(this, "エラー", "アプリケーション格納フォルダを取得できませんでした。");
+        QMessageBox::critical(this, TR("msg_desktop_error_title"), TR("msg_desktop_dir_error"));
         return;
     }
 
@@ -607,15 +646,15 @@ void MainWindow::onRegisterDesktopClicked() {
     QString desktopFilePath = QDir(appDir).filePath("python-launcher.desktop");
 
     if (QFile::exists(desktopFilePath)) {
-        auto reply = QMessageBox::question(this, "登録解除の確認",
-            "Ubuntuのアプリケーション一覧から「Python Launcher」の登録を解除しますか？",
+        auto reply = QMessageBox::question(this, TR("msg_desktop_reg_confirm_title"),
+            TR("msg_desktop_reg_confirm_text"),
             QMessageBox::Yes | QMessageBox::No);
 
         if (reply == QMessageBox::Yes) {
             if (QFile::remove(desktopFilePath)) {
-                QMessageBox::information(this, "解除完了", "アプリケーション一覧から登録を解除しました。");
+                QMessageBox::information(this, TR("msg_desktop_unreg_success_title"), TR("msg_desktop_unreg_success_text"));
             } else {
-                QMessageBox::critical(this, "エラー", "ショートカットファイルの削除に失敗しました。");
+                QMessageBox::critical(this, TR("msg_desktop_error_title"), TR("msg_desktop_unreg_failed"));
             }
             updateRegisterDesktopButton();
         }
@@ -623,7 +662,7 @@ void MainWindow::onRegisterDesktopClicked() {
         QString execPath = QCoreApplication::applicationFilePath();
         QFile file(desktopFilePath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QMessageBox::critical(this, "エラー", QString("ショートカットファイルの作成に失敗しました:\n%1").arg(file.errorString()));
+            QMessageBox::critical(this, TR("msg_desktop_error_title"), TR_ARGS("msg_desktop_create_error", {file.errorString()}));
             return;
         }
 
@@ -633,7 +672,7 @@ void MainWindow::onRegisterDesktopClicked() {
         out << "Type=Application\n";
         out << "Name=Python Launcher\n";
         out << "GenericName=Python App Launcher\n";
-        out << "Comment=コマンドライン入力不要・ワンクリックでPythonスクリプトを安全起動\n";
+        out << "Comment=One-click Python script execution without terminal\n";
         out << "Exec=\"" << execPath << "\" %f\n";
         out << "Icon=utilities-terminal\n";
         out << "Terminal=false\n";
@@ -644,10 +683,7 @@ void MainWindow::onRegisterDesktopClicked() {
                             QFileDevice::ReadGroup | QFileDevice::ExeGroup |
                             QFileDevice::ReadOther | QFileDevice::ExeOther);
 
-        QMessageBox::information(this, "登録完了",
-            QString("Ubuntuのアプリケーション一覧に「Python Launcher」を登録しました！\n\n"
-                    "【起動方法】\n"
-                    "・画面左下の「アプリを表示」（またはSuperキー）から「Python Launcher」を検索して直接起動できます。"));
+        QMessageBox::information(this, TR("msg_desktop_reg_success_title"), TR("msg_desktop_reg_success_text"));
         updateRegisterDesktopButton();
     }
 }

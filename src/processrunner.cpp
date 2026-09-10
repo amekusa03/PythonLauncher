@@ -1,4 +1,5 @@
 #include "processrunner.h"
+#include "i18n.h"
 #include <QProcessEnvironment>
 #include <QFileInfo>
 #include <QDir>
@@ -62,9 +63,9 @@ bool ProcessRunner::start(const AppItem& item) {
         if (baseName.isEmpty()) baseName = "python_app";
         QString logPath = (workDir.isEmpty() ? QDir::currentPath() : workDir) + "/" + baseName + ".log";
 
-        emit outputReceived(m_appId, QString("[システム] 独立起動(デタッチ)を開始します: %1 %2\n").arg(program, args.join(" ")), false);
-        emit outputReceived(m_appId, QString("[システム] ログ出力先: %1\n").arg(logPath), false);
-        emit outputReceived(m_appId, "[システム] 親アプリを終了しても Python はバックグラウンドで動作し続けます。\n", false);
+        emit outputReceived(m_appId, TR_ARGS("proc_detached_start", {program, args.join(" ")}), false);
+        emit outputReceived(m_appId, TR_ARGS("proc_detached_log_dest", {logPath}), false);
+        emit outputReceived(m_appId, TR("proc_detached_bg_notice"), false);
 
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         QString displayEnv = env.value("DISPLAY", ":0");
@@ -87,11 +88,11 @@ bool ProcessRunner::start(const AppItem& item) {
         if (ok && pid > 0) {
             m_detachedPid = pid;
             setState(Running);
-            emit outputReceived(m_appId, QString("[システム] 独立プロセスが正常に開始されました (PID: %1)\n").arg(pid), false);
+            emit outputReceived(m_appId, TR_ARGS("proc_detached_success", {QString::number(pid)}), false);
             return true;
         } else {
             setState(FailedToStart, -1);
-            emit outputReceived(m_appId, "[エラー] 独立プロセスの起動に失敗しました。\n", true);
+            emit outputReceived(m_appId, TR("proc_detached_failed"), true);
             return false;
         }
     } else {
@@ -104,7 +105,7 @@ bool ProcessRunner::start(const AppItem& item) {
             m_process->setWorkingDirectory(workDir);
         }
 
-        emit outputReceived(m_appId, QString("[システム] 起動中: %1 %2\n").arg(program, args.join(" ")), false);
+        emit outputReceived(m_appId, TR_ARGS("proc_normal_start", {program, args.join(" ")}), false);
 
         m_process->start(program, args);
         return true;
@@ -114,7 +115,7 @@ bool ProcessRunner::start(const AppItem& item) {
 void ProcessRunner::stop() {
     if (m_isDetached) {
         if (m_detachedPid > 0) {
-            emit outputReceived(m_appId, QString("[システム] 独立プロセス (PID: %1) にSIGTERMを送ります...\n").arg(m_detachedPid), false);
+            emit outputReceived(m_appId, TR_ARGS("proc_send_sigterm", {QString::number(m_detachedPid)}), false);
             QProcess::execute("kill", QStringList() << QString::number(m_detachedPid));
             m_detachedPid = 0;
             setState(Finished, 0);
@@ -123,7 +124,7 @@ void ProcessRunner::stop() {
     }
 
     if (m_process && m_process->state() != QProcess::NotRunning) {
-        emit outputReceived(m_appId, "[システム] プロセス停止を要求しました...\n", false);
+        emit outputReceived(m_appId, TR("proc_req_stop"), false);
         m_process->terminate();
     }
 }
@@ -131,7 +132,7 @@ void ProcessRunner::stop() {
 void ProcessRunner::killProcess() {
     if (m_isDetached) {
         if (m_detachedPid > 0) {
-            emit outputReceived(m_appId, QString("[システム] 独立プロセス (PID: %1) をSIGKILLで強制終了します...\n").arg(m_detachedPid), true);
+            emit outputReceived(m_appId, TR_ARGS("proc_send_sigkill", {QString::number(m_detachedPid)}), true);
             QProcess::execute("kill", QStringList() << "-9" << QString::number(m_detachedPid));
             m_detachedPid = 0;
             setState(Finished, -1);
@@ -140,7 +141,7 @@ void ProcessRunner::killProcess() {
     }
 
     if (m_process && m_process->state() != QProcess::NotRunning) {
-        emit outputReceived(m_appId, "[システム] プロセスを強制終了(SIGKILL)しました。\n", true);
+        emit outputReceived(m_appId, TR("proc_force_killed"), true);
         m_process->kill();
     }
 }
@@ -177,20 +178,20 @@ void ProcessRunner::onFinished(int exitCode, QProcess::ExitStatus exitStatus) {
     Q_UNUSED(exitStatus);
     if (!m_isDetached) {
         setState(Finished, exitCode);
-        emit outputReceived(m_appId, QString("[システム] プロセスが終了しました (終了コード: %1)\n").arg(exitCode), false);
+        emit outputReceived(m_appId, TR_ARGS("proc_finished", {QString::number(exitCode)}), false);
     }
 }
 
 void ProcessRunner::onErrorOccurred(QProcess::ProcessError error) {
     if (!m_isDetached && error == QProcess::FailedToStart) {
         setState(FailedToStart, -1);
-        emit outputReceived(m_appId, "[エラー] プロセスの起動に失敗しました。Pythonのパスまたはスクリプトパスを確認してください。\n", true);
+        emit outputReceived(m_appId, TR("proc_error_start"), true);
     }
 }
 
 void ProcessRunner::onProcessStateChanged(QProcess::ProcessState newState) {
     if (!m_isDetached && newState == QProcess::Running) {
         setState(Running);
-        emit outputReceived(m_appId, QString("[システム] 起動完了 (PID: %1)\n").arg(currentPid()), false);
+        emit outputReceived(m_appId, TR_ARGS("proc_running", {QString::number(currentPid())}), false);
     }
 }

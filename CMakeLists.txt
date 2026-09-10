@@ -12,6 +12,7 @@ find_package(Qt5 REQUIRED COMPONENTS Widgets Core Gui)
 
 set(SOURCES
     src/main.cpp
+    src/i18n.cpp
     src/appitem.cpp
     src/processrunner.cpp
     src/addappdialog.cpp
@@ -20,6 +21,7 @@ set(SOURCES
 )
 
 set(HEADERS
+    src/i18n.h
     src/appitem.h
     src/processrunner.h
     src/addappdialog.h
